@@ -1,5 +1,5 @@
 import time
-import os 
+import os
 
 def escape_special_characters(line):
     replacements = {
@@ -22,23 +22,33 @@ def py_to_duckyscript(input_file, output_file, add_indentation):
             stripped_line = line.strip()
             escaped_line = escape_special_characters(stripped_line)
 
+            # Handle indentation and backspace logic
             if line.startswith(' ') or line.startswith('\t'):
                 new_indent_level = len(line) - len(line.lstrip())
                 if new_indent_level < indent_level:
+                    # Calculate how many backspaces are needed
                     backspaces = (indent_level - new_indent_level) // 4
                     duckyscript.append(f"REPEAT {backspaces} BACKSPACE\n")
                 indent_level = new_indent_level
 
+            # Add indentation if the environment lacks auto-indent
             if add_indentation:
                 tabs = indent_level // 4
                 if tabs > 0:
                     duckyscript.append(f"REPEAT {tabs} TAB\n")
 
+            # Insert the escaped line into the ducky script
             duckyscript.append(f"STRING {escaped_line}\nENTER\n")
 
+            # If the line ends with a colon, we're entering a new block (e.g., loops, functions)
             if stripped_line.endswith(':'):
-                indent_level += 4
+                indent_level += 4  # Increase indentation level for the next block
 
+            # If the line is a return to a previous block (indented less than before), reduce indentation
+            if indent_level > 0 and not stripped_line.endswith(':'):
+                indent_level = max(indent_level - 4, 0)
+
+        # Write the ducky script to the output file
         with open(output_file, 'w') as ducky_file:
             ducky_file.writelines(duckyscript)
         print(f"Converted {input_file} => {output_file} successfully.")
